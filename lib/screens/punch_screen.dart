@@ -5,6 +5,7 @@ import 'package:path/path.dart' show join;
 import 'package:path_provider/path_provider.dart';
 import '../models/models.dart';
 import '../services/api_service.dart';
+import '../utils/notification_helper.dart';
 
 class PunchScreen extends StatefulWidget {
   final User user;
@@ -19,8 +20,6 @@ class _PunchScreenState extends State<PunchScreen> {
   CameraController? _controller;
   Future<void>? _initializeControllerFuture;
   bool _isPunching = false;
-  String? _message;
-  bool _isSuccess = false;
 
   @override
   void initState() {
@@ -52,7 +51,6 @@ class _PunchScreenState extends State<PunchScreen> {
 
     setState(() {
       _isPunching = true;
-      _message = null;
     });
 
     try {
@@ -69,20 +67,22 @@ class _PunchScreenState extends State<PunchScreen> {
       final apiService = ApiService();
       final result = await apiService.punch(widget.user.username, image.path);
 
-      setState(() {
-        _message = result['message'];
-        _isSuccess = true;
-      });
-
-      // Auto-close after success
-      Future.delayed(const Duration(seconds: 2), () {
-        if (mounted) Navigator.pop(context);
-      });
+      if (mounted) {
+        NotificationHelper.show(
+          context,
+          isSuccess: true,
+          message: result['message'] ?? 'Punch successful',
+        );
+        Navigator.pop(context);
+      }
     } catch (e) {
-      setState(() {
-        _message = e.toString();
-        _isSuccess = false;
-      });
+      if (mounted) {
+        NotificationHelper.show(
+          context,
+          isSuccess: false,
+          message: e.toString().replaceAll('Exception: ', ''),
+        );
+      }
     } finally {
       if (mounted) {
         setState(() {
@@ -110,22 +110,6 @@ class _PunchScreenState extends State<PunchScreen> {
               },
             ),
           ),
-          if (_message != null)
-            Container(
-              padding: const EdgeInsets.all(16),
-              color: _isSuccess ? Colors.green.shade100 : Colors.red.shade100,
-              width: double.infinity,
-              child: Text(
-                _message!,
-                style: TextStyle(
-                  color: _isSuccess
-                      ? Colors.green.shade800
-                      : Colors.red.shade800,
-                  fontWeight: FontWeight.bold,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
           Padding(
             padding: const EdgeInsets.all(20.0),
             child: SizedBox(

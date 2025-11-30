@@ -61,7 +61,11 @@ class ApiService {
     }
   }
 
-  Future<void> addUser(String username, String imagePath, String token) async {
+  Future<String> addUser(
+    String username,
+    String imagePath,
+    String token,
+  ) async {
     final url = await baseUrl;
     var request = http.MultipartRequest(
       'POST',
@@ -70,23 +74,28 @@ class ApiService {
     request.files.add(await http.MultipartFile.fromPath('file', imagePath));
 
     final response = await request.send();
+    final responseBody = await response.stream.bytesToString();
 
-    if (response.statusCode != 200 && response.statusCode != 201) {
-      final responseBody = await response.stream.bytesToString();
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return json.decode(responseBody)['message'] ?? 'User added successfully';
+    } else {
       throw Exception(
         json.decode(responseBody)['message'] ?? 'Failed to add user',
       );
     }
   }
 
-  Future<void> deleteUser(String username, String token) async {
+  Future<String> deleteUser(String username, String token) async {
     final url = await baseUrl;
     final response = await http.delete(
       Uri.parse('$url/admin/user?username=$username&token=$token'),
     );
 
-    if (response.statusCode != 200) {
-      throw Exception('Failed to delete user');
+    final responseBody = json.decode(response.body);
+    if (response.statusCode == 200) {
+      return responseBody['message'] ?? 'User deleted successfully';
+    } else {
+      throw Exception(responseBody['message'] ?? 'Failed to delete user');
     }
   }
 

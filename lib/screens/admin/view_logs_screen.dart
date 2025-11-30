@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../models/models.dart';
 import '../../providers/providers.dart';
 import '../../services/api_service.dart';
+import '../../utils/notification_helper.dart';
 
 class ViewLogsScreen extends StatefulWidget {
   const ViewLogsScreen({super.key});
@@ -41,12 +42,23 @@ class _ViewLogsScreenState extends State<ViewLogsScreen> {
           token,
         );
         setState(() => _logs = logs);
+        if (mounted) {
+          NotificationHelper.show(
+            context,
+            isSuccess: true,
+            message: 'Logs fetched successfully',
+          );
+        }
       } catch (e) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+        if (mounted) {
+          NotificationHelper.show(
+            context,
+            isSuccess: false,
+            message: e.toString().replaceAll('Exception: ', ''),
+          );
+        }
       } finally {
-        setState(() => _isLoading = false);
+        if (mounted) setState(() => _isLoading = false);
       }
     }
   }

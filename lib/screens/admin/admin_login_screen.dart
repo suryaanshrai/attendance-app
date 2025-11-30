@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/providers.dart';
+import '../../utils/notification_helper.dart';
 
 class AdminLoginScreen extends StatefulWidget {
   const AdminLoginScreen({super.key});
@@ -24,12 +25,19 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
           listen: false,
         ).login(_usernameController.text, _passwordController.text);
         if (mounted) {
+          NotificationHelper.show(
+            context,
+            isSuccess: true,
+            message: 'Admin logged in successfully',
+          );
           Navigator.pushReplacementNamed(context, '/admin_dashboard');
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Login Failed: ${e.toString()}')),
+          NotificationHelper.show(
+            context,
+            isSuccess: false,
+            message: e.toString().replaceAll('Exception: ', ''),
           );
         }
       } finally {

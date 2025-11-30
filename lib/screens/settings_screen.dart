@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/providers.dart';
+import '../utils/notification_helper.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -32,9 +33,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
         context,
         listen: false,
       ).updateBaseUrl(_urlController.text);
-      ScaffoldMessenger.of(
+
+      NotificationHelper.show(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Settings saved')));
+        isSuccess: true,
+        message: 'Settings saved successfully',
+      );
       Navigator.pop(context);
     }
   }

@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../../models/models.dart';
 import '../../providers/providers.dart';
 import '../../services/api_service.dart';
+import '../../utils/notification_helper.dart';
 
 class ManageUsersScreen extends StatefulWidget {
   const ManageUsersScreen({super.key});
@@ -29,18 +30,18 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
     if (token == null) return;
 
     try {
-      await ApiService().deleteUser(username, token);
+      final message = await ApiService().deleteUser(username, token);
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('User $username deleted')));
+        NotificationHelper.show(context, isSuccess: true, message: message);
         Provider.of<UserProvider>(context, listen: false).fetchUsers();
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
+        NotificationHelper.show(
           context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+          isSuccess: false,
+          message: e.toString().replaceAll('Exception: ', ''),
+        );
       }
     }
   }
@@ -129,19 +130,23 @@ class _AddUserScreenState extends State<AddUserScreen> {
 
       final token = Provider.of<AdminProvider>(context, listen: false).token;
       if (token != null) {
-        await ApiService().addUser(_usernameController.text, image.path, token);
+        final message = await ApiService().addUser(
+          _usernameController.text,
+          image.path,
+          token,
+        );
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('User added successfully')),
-          );
+          NotificationHelper.show(context, isSuccess: true, message: message);
           Navigator.pop(context);
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
+        NotificationHelper.show(
           context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+          isSuccess: false,
+          message: e.toString().replaceAll('Exception: ', ''),
+        );
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);

@@ -4,12 +4,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/models.dart';
 
 class ApiService {
-  static const String _defaultBaseUrl = 'http://10.0.2.2:8000';
+  static const String defaultBaseUrl = 'http://localhost:8000';
   static const String _baseUrlKey = 'base_url';
 
   Future<String> get baseUrl async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_baseUrlKey) ?? _defaultBaseUrl;
+    return prefs.getString(_baseUrlKey) ?? defaultBaseUrl;
   }
 
   Future<void> setBaseUrl(String url) async {
@@ -60,11 +60,24 @@ class ApiService {
     final response = await http.post(uri);
 
     if (response.statusCode == 200) {
+      if (response.body.isEmpty)
+        throw Exception('Server returned empty response');
       final data = json.decode(response.body);
       return data['token'];
     } else {
-      final body = json.decode(response.body);
-      throw Exception(body['message'] ?? 'Invalid credentials');
+      if (response.body.isEmpty)
+        throw Exception('Login failed: ${response.statusCode}');
+      try {
+        final body = json.decode(response.body);
+        throw Exception(body['message'] ?? 'Invalid credentials');
+      } catch (e) {
+        if (e is FormatException) {
+          throw Exception(
+            'Server error: ${response.statusCode} (Invalid JSON)',
+          );
+        }
+        rethrow;
+      }
     }
   }
 

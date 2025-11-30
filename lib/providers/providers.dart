@@ -5,7 +5,7 @@ import '../models/models.dart';
 
 class ConfigProvider with ChangeNotifier {
   final ApiService _apiService = ApiService();
-  String _baseUrl = '';
+  String _baseUrl = ApiService.defaultBaseUrl;
 
   String get baseUrl => _baseUrl;
 

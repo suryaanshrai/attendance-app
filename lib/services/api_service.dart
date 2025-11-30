@@ -25,16 +25,19 @@ class ApiService {
       final List<dynamic> data = json.decode(response.body);
       return data.map((json) => User.fromJson(json)).toList();
     } else {
-      throw Exception('Failed to load users');
+      final body = json.decode(response.body);
+      throw Exception(body['message'] ?? 'Failed to load users');
     }
   }
 
   Future<Map<String, dynamic>> punch(String username, String imagePath) async {
     final url = await baseUrl;
-    var request = http.MultipartRequest(
-      'POST',
-      Uri.parse('$url/punch?username=$username'),
-    );
+    // Use Uri constructor to handle encoding
+    final uri = Uri.parse(
+      '$url/punch',
+    ).replace(queryParameters: {'username': username});
+
+    var request = http.MultipartRequest('POST', uri);
     request.files.add(await http.MultipartFile.fromPath('file', imagePath));
 
     final response = await request.send();
@@ -43,21 +46,25 @@ class ApiService {
     if (response.statusCode == 200) {
       return json.decode(responseBody);
     } else {
-      throw Exception(json.decode(responseBody)['message'] ?? 'Punch failed');
+      final body = json.decode(responseBody);
+      throw Exception(body['message'] ?? 'Punch failed');
     }
   }
 
   Future<String> adminLogin(String username, String password) async {
     final url = await baseUrl;
-    final response = await http.post(
-      Uri.parse('$url/admin/login?username=$username&password=$password'),
-    );
+    final uri = Uri.parse(
+      '$url/admin/login',
+    ).replace(queryParameters: {'username': username, 'password': password});
+
+    final response = await http.post(uri);
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       return data['token'];
     } else {
-      throw Exception('Invalid credentials');
+      final body = json.decode(response.body);
+      throw Exception(body['message'] ?? 'Invalid credentials');
     }
   }
 
@@ -67,10 +74,11 @@ class ApiService {
     String token,
   ) async {
     final url = await baseUrl;
-    var request = http.MultipartRequest(
-      'POST',
-      Uri.parse('$url/admin/user?username=$username&token=$token'),
-    );
+    final uri = Uri.parse(
+      '$url/admin/user',
+    ).replace(queryParameters: {'username': username, 'token': token});
+
+    var request = http.MultipartRequest('POST', uri);
     request.files.add(await http.MultipartFile.fromPath('file', imagePath));
 
     final response = await request.send();
@@ -79,19 +87,20 @@ class ApiService {
     if (response.statusCode == 200 || response.statusCode == 201) {
       return json.decode(responseBody)['message'] ?? 'User added successfully';
     } else {
-      throw Exception(
-        json.decode(responseBody)['message'] ?? 'Failed to add user',
-      );
+      final body = json.decode(responseBody);
+      throw Exception(body['message'] ?? 'Failed to add user');
     }
   }
 
   Future<String> deleteUser(String username, String token) async {
     final url = await baseUrl;
-    final response = await http.delete(
-      Uri.parse('$url/admin/user?username=$username&token=$token'),
-    );
+    final uri = Uri.parse(
+      '$url/admin/user',
+    ).replace(queryParameters: {'username': username, 'token': token});
 
+    final response = await http.delete(uri);
     final responseBody = json.decode(response.body);
+
     if (response.statusCode == 200) {
       return responseBody['message'] ?? 'User deleted successfully';
     } else {
@@ -106,16 +115,22 @@ class ApiService {
     String token,
   ) async {
     final url = await baseUrl;
-    final response = await http.get(
-      Uri.parse(
-        '$url/admin/logs?username=$username&year=$year&month=$month&token=$token',
-      ),
+    final uri = Uri.parse('$url/admin/logs').replace(
+      queryParameters: {
+        'username': username,
+        'year': year.toString(),
+        'month': month.toString(),
+        'token': token,
+      },
     );
+
+    final response = await http.get(uri);
 
     if (response.statusCode == 200) {
       return Log.fromJson(json.decode(response.body));
     } else {
-      throw Exception('Failed to fetch logs');
+      final body = json.decode(response.body);
+      throw Exception(body['message'] ?? 'Failed to fetch logs');
     }
   }
 }

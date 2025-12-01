@@ -56,6 +56,22 @@ class ApiService {
     }
   }
 
+  Future<List<String>> getUserNames() async {
+    final url = await baseUrl;
+    final response = await http.get(
+      Uri.parse('$url/users/namelist'),
+      headers: _getHeaders(),
+    );
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return List<String>.from(data['users']);
+    } else {
+      final body = json.decode(response.body);
+      throw Exception(body['message'] ?? 'Failed to load user names');
+    }
+  }
+
   Future<Map<String, dynamic>> punch(String username, String imagePath) async {
     final url = await baseUrl;
     // Use Uri constructor to handle encoding

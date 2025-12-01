@@ -55,7 +55,7 @@ class _ViewLogsScreenState extends State<ViewLogsScreen> {
     }
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<UserProvider>(context, listen: false).fetchUsers();
+      Provider.of<UserProvider>(context, listen: false).fetchUserNames();
       if (_selectedUser != null) {
         _fetchLogs();
       }

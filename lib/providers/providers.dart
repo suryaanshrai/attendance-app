@@ -114,4 +114,20 @@ class UserProvider with ChangeNotifier {
       notifyListeners();
     }
   }
+
+  Future<void> fetchUserNames() async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      final apiService = ApiService();
+      final names = await apiService.getUserNames();
+      _users = names.map((name) => User(username: name)).toList();
+    } catch (e) {
+      print('Error fetching user names: $e');
+      _users = [];
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
 }

@@ -26,7 +26,7 @@ class _SalaryCalculatorScreenState extends State<SalaryCalculatorScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<UserProvider>(context, listen: false).fetchUsers();
+      Provider.of<UserProvider>(context, listen: false).fetchUserNames();
     });
   }
 

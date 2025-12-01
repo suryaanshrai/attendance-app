@@ -172,4 +172,36 @@ class ApiService {
       throw Exception(body['message'] ?? 'Failed to fetch logs');
     }
   }
+
+  Future<String> adminPunch(
+    String username,
+    String token,
+    DateTime? datetime,
+  ) async {
+    final url = await baseUrl;
+    final uri = Uri.parse('$url/admin/punch');
+
+    final Map<String, dynamic> queryParams = {
+      'username': username,
+      'token': token,
+    };
+
+    if (datetime != null) {
+      // Format: YYYY-MM-DD HH:MM:SS
+      final dtStr =
+          "${datetime.year}-${datetime.month.toString().padLeft(2, '0')}-${datetime.day.toString().padLeft(2, '0')} ${datetime.hour.toString().padLeft(2, '0')}:${datetime.minute.toString().padLeft(2, '0')}:${datetime.second.toString().padLeft(2, '0')}";
+      queryParams['datetime_str'] = dtStr;
+    }
+
+    final finalUri = uri.replace(queryParameters: queryParams);
+
+    final response = await http.post(finalUri, headers: _getHeaders());
+    final responseBody = json.decode(response.body);
+
+    if (response.statusCode == 200) {
+      return responseBody['message'] ?? 'Punch recorded successfully';
+    } else {
+      throw Exception(responseBody['message'] ?? 'Failed to record punch');
+    }
+  }
 }

@@ -7,6 +7,14 @@ class User {
   factory User.fromJson(Map<String, dynamic> json) {
     return User(username: json['username'], image: json['image']);
   }
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is User && other.username == username;
+  }
+
+  @override
+  int get hashCode => username.hashCode;
 }
 
 class Log {
@@ -30,4 +38,16 @@ class Log {
       logs: List<String>.from(json['logs']),
     );
   }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is Log &&
+        other.username == username &&
+        other.year == year &&
+        other.month == month;
+  }
+
+  @override
+  int get hashCode => Object.hash(username, year, month);
 }

@@ -2,7 +2,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
-import '../../models/models.dart';
 import '../../providers/providers.dart';
 import '../../services/api_service.dart';
 import '../../utils/notification_helper.dart';

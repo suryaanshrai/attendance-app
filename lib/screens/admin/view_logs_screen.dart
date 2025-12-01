@@ -8,7 +8,16 @@ import '../../services/api_service.dart';
 import '../../utils/notification_helper.dart';
 
 class ViewLogsScreen extends StatefulWidget {
-  const ViewLogsScreen({super.key});
+  final User? initialUser;
+  final int? initialYear;
+  final int? initialMonth;
+
+  const ViewLogsScreen({
+    super.key,
+    this.initialUser,
+    this.initialYear,
+    this.initialMonth,
+  });
 
   @override
   State<ViewLogsScreen> createState() => _ViewLogsScreenState();
@@ -35,8 +44,21 @@ class _ViewLogsScreenState extends State<ViewLogsScreen> {
   @override
   void initState() {
     super.initState();
+    if (widget.initialUser != null) {
+      _selectedUser = widget.initialUser;
+    }
+    if (widget.initialYear != null) {
+      _year = widget.initialYear!;
+    }
+    if (widget.initialMonth != null) {
+      _month = widget.initialMonth!;
+    }
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<UserProvider>(context, listen: false).fetchUsers();
+      if (_selectedUser != null) {
+        _fetchLogs();
+      }
     });
   }
 

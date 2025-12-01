@@ -25,6 +25,16 @@ class AdminDashboardScreen extends StatelessWidget {
             title: 'View Logs',
             onTap: () => Navigator.pushNamed(context, '/view_logs'),
           ),
+          _AdminCard(
+            icon: Icons.calculate,
+            title: 'Salary Calc',
+            onTap: () => Navigator.pushNamed(context, '/salary_calculator'),
+          ),
+          _AdminCard(
+            icon: Icons.edit_calendar,
+            title: 'Manual Entry',
+            onTap: () => Navigator.pushNamed(context, '/manual_entry'),
+          ),
         ],
       ),
     );

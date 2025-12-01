@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:camera/camera.dart';
 import 'providers/providers.dart';
 import 'screens/home_screen.dart';
 import 'screens/punch_screen.dart';
@@ -8,7 +7,9 @@ import 'screens/settings_screen.dart';
 import 'screens/admin/admin_login_screen.dart';
 import 'screens/admin/admin_dashboard_screen.dart';
 import 'screens/admin/manage_users_screen.dart';
+import 'screens/admin/manual_entry_screen.dart';
 import 'screens/admin/view_logs_screen.dart';
+import 'screens/admin/salary_calculator_screen.dart';
 import 'models/models.dart';
 
 void main() async {
@@ -46,6 +47,8 @@ class MyApp extends StatelessWidget {
           '/admin_dashboard': (context) => const AdminDashboardScreen(),
           '/manage_users': (context) => const ManageUsersScreen(),
           '/view_logs': (context) => const ViewLogsScreen(),
+          '/salary_calculator': (context) => const SalaryCalculatorScreen(),
+          '/manual_entry': (context) => const ManualEntryScreen(),
         },
         onGenerateRoute: (settings) {
           if (settings.name == '/punch') {

@@ -27,19 +27,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
     super.dispose();
   }
 
-  void _saveSettings() {
+  bool _isConnecting = false;
+
+  Future<void> _saveSettings() async {
     if (_formKey.currentState!.validate()) {
-      Provider.of<ConfigProvider>(
+      setState(() => _isConnecting = true);
+
+      final success = await Provider.of<ConfigProvider>(
         context,
         listen: false,
       ).updateBaseUrl(_urlController.text);
 
-      NotificationHelper.show(
-        context,
-        isSuccess: true,
-        message: 'Settings saved successfully',
-      );
-      Navigator.pop(context);
+      if (mounted) {
+        setState(() => _isConnecting = false);
+        if (success) {
+          NotificationHelper.show(
+            context,
+            isSuccess: true,
+            message: 'Connected and saved successfully',
+          );
+          Navigator.pop(context);
+        } else {
+          NotificationHelper.show(
+            context,
+            isSuccess: false,
+            message: 'Server not reachable',
+          );
+        }
+      }
     }
   }
 
@@ -72,8 +87,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               const SizedBox(height: 20),
               ElevatedButton(
-                onPressed: _saveSettings,
-                child: const Text('Save Configuration'),
+                onPressed: _isConnecting ? null : _saveSettings,
+                child: _isConnecting
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Connect and Save'),
               ),
             ],
           ),

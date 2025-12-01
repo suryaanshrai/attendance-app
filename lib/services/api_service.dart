@@ -17,6 +17,22 @@ class ApiService {
     await prefs.setString(_baseUrlKey, url);
   }
 
+  Future<bool> checkConnection(String url) async {
+    try {
+      final response = await http
+          .get(Uri.parse(url))
+          .timeout(const Duration(seconds: 5)); // Short timeout for check
+
+      if (response.statusCode == 200) {
+        final body = json.decode(response.body);
+        return body['status'] == 'running';
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
+  }
+
   Future<List<User>> getUsers() async {
     final url = await baseUrl;
     final response = await http.get(Uri.parse('$url/users'));

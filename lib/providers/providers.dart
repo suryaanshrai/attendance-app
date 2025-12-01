@@ -16,12 +16,28 @@ class ConfigProvider with ChangeNotifier {
   Future<void> _loadConfig() async {
     _baseUrl = await _apiService.baseUrl;
     notifyListeners();
+    checkConnectionStatus();
   }
 
-  Future<void> updateBaseUrl(String url) async {
-    await _apiService.setBaseUrl(url);
-    _baseUrl = url;
-    notifyListeners();
+  Future<bool> updateBaseUrl(String url) async {
+    final isConnected = await _apiService.checkConnection(url);
+    if (isConnected) {
+      await _apiService.setBaseUrl(url);
+      _baseUrl = url;
+      notifyListeners();
+      return true;
+    }
+    return false;
+  }
+
+  Future<void> checkConnectionStatus() async {
+    final isConnected = await _apiService.checkConnection(_baseUrl);
+    if (!isConnected) {
+      // We could expose a status stream or variable here if needed
+      print('Startup check: Server not reachable at $_baseUrl');
+    } else {
+      print('Startup check: Connected to $_baseUrl');
+    }
   }
 }
 

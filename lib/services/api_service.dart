@@ -17,10 +17,17 @@ class ApiService {
     await prefs.setString(_baseUrlKey, url);
   }
 
+  Map<String, String> _getHeaders() {
+    return {
+      'Content-Type': 'application/json',
+      'X-Tunnel-Skip-Anti-Phishing-Page': '1',
+    };
+  }
+
   Future<bool> checkConnection(String url) async {
     try {
       final response = await http
-          .get(Uri.parse(url))
+          .get(Uri.parse(url), headers: _getHeaders())
           .timeout(const Duration(seconds: 5)); // Short timeout for check
 
       if (response.statusCode == 200) {
@@ -35,7 +42,10 @@ class ApiService {
 
   Future<List<User>> getUsers() async {
     final url = await baseUrl;
-    final response = await http.get(Uri.parse('$url/users'));
+    final response = await http.get(
+      Uri.parse('$url/users'),
+      headers: _getHeaders(),
+    );
 
     if (response.statusCode == 200) {
       final List<dynamic> data = json.decode(response.body);
@@ -73,7 +83,7 @@ class ApiService {
       '$url/admin/login',
     ).replace(queryParameters: {'username': username, 'password': password});
 
-    final response = await http.post(uri);
+    final response = await http.post(uri, headers: _getHeaders());
 
     if (response.statusCode == 200) {
       if (response.body.isEmpty)
@@ -127,7 +137,7 @@ class ApiService {
       '$url/admin/user',
     ).replace(queryParameters: {'username': username, 'token': token});
 
-    final response = await http.delete(uri);
+    final response = await http.delete(uri, headers: _getHeaders());
     final responseBody = json.decode(response.body);
 
     if (response.statusCode == 200) {
@@ -153,7 +163,7 @@ class ApiService {
       },
     );
 
-    final response = await http.get(uri);
+    final response = await http.get(uri, headers: _getHeaders());
 
     if (response.statusCode == 200) {
       return Log.fromJson(json.decode(response.body));

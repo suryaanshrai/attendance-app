@@ -1,8 +1,6 @@
 import 'dart:io';
-import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
-import 'package:path/path.dart' show join;
-import 'package:path_provider/path_provider.dart';
+import 'package:image_picker/image_picker.dart';
 import '../models/models.dart';
 import '../services/api_service.dart';
 import '../utils/notification_helper.dart';
@@ -17,55 +15,25 @@ class PunchScreen extends StatefulWidget {
 }
 
 class _PunchScreenState extends State<PunchScreen> {
-  CameraController? _controller;
-  Future<void>? _initializeControllerFuture;
   bool _isPunching = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _initCamera();
-  }
-
-  Future<void> _initCamera() async {
-    final cameras = await availableCameras();
-    final firstCamera = cameras.firstWhere(
-      (camera) => camera.lensDirection == CameraLensDirection.front,
-      orElse: () => cameras.first,
-    );
-
-    _controller = CameraController(firstCamera, ResolutionPreset.medium);
-
-    _initializeControllerFuture = _controller!.initialize();
-    if (mounted) setState(() {});
-  }
-
-  @override
-  void dispose() {
-    _controller?.dispose();
-    super.dispose();
-  }
+  final ImagePicker _picker = ImagePicker();
 
   Future<void> _takePictureAndPunch() async {
-    if (_controller == null || !_controller!.value.isInitialized) return;
-
-    setState(() {
-      _isPunching = true;
-    });
-
     try {
-      await _initializeControllerFuture;
-
-      final path = join(
-        (await getTemporaryDirectory()).path,
-        '${DateTime.now()}.png',
+      final XFile? photo = await _picker.pickImage(
+        source: ImageSource.camera,
+        preferredCameraDevice: CameraDevice.front,
+        imageQuality: 50, // Optimize image size
       );
 
-      final image = await _controller!.takePicture();
-      await image.saveTo(path);
+      if (photo == null) return; // User canceled
+
+      setState(() {
+        _isPunching = true;
+      });
 
       final apiService = ApiService();
-      final result = await apiService.punch(widget.user.username, image.path);
+      final result = await apiService.punch(widget.user.username, photo.path);
 
       if (mounted) {
         NotificationHelper.show(
@@ -96,35 +64,38 @@ class _PunchScreenState extends State<PunchScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text('Punch In: ${widget.user.username}')),
-      body: Column(
-        children: [
-          Expanded(
-            child: FutureBuilder<void>(
-              future: _initializeControllerFuture,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.done) {
-                  return CameraPreview(_controller!);
-                } else {
-                  return const Center(child: CircularProgressIndicator());
-                }
-              },
-            ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (_isPunching) ...[
+                const CircularProgressIndicator(),
+                const SizedBox(height: 20),
+                const Text('Processing punch...'),
+              ] else ...[
+                const Icon(Icons.camera_alt, size: 100, color: Colors.grey),
+                const SizedBox(height: 20),
+                const Text(
+                  'Tap the button below to take a selfie and punch in.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 16),
+                ),
+                const SizedBox(height: 40),
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton.icon(
+                    onPressed: _takePictureAndPunch,
+                    icon: const Icon(Icons.camera),
+                    label: const Text('TAKE PICTURE & PUNCH'),
+                  ),
+                ),
+              ],
+            ],
           ),
-          Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton.icon(
-                onPressed: _isPunching ? null : _takePictureAndPunch,
-                icon: const Icon(Icons.camera_alt),
-                label: _isPunching
-                    ? const CircularProgressIndicator()
-                    : const Text('PUNCH ATTENDANCE'),
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

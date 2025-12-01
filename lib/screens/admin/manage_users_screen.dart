@@ -1,8 +1,6 @@
 import 'dart:io';
-import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
-import 'package:path/path.dart' show join;
-import 'package:path_provider/path_provider.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../../models/models.dart';
 import '../../providers/providers.dart';
@@ -72,7 +70,31 @@ class _ManageUsersScreenState extends State<ManageUsersScreen> {
                   title: Text(user.username),
                   trailing: IconButton(
                     icon: const Icon(Icons.delete, color: Colors.red),
-                    onPressed: () => _deleteUser(user.username),
+                    onPressed: () => showDialog(
+                      context: context,
+                      builder: (ctx) => AlertDialog(
+                        title: const Text('Delete User?'),
+                        content: Text(
+                          'Are you sure you want to delete ${user.username}?',
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx),
+                            child: const Text('Cancel'),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              Navigator.pop(ctx);
+                              _deleteUser(user.username);
+                            },
+                            child: const Text(
+                              'Delete',
+                              style: TextStyle(color: Colors.red),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 );
               },
@@ -90,49 +112,56 @@ class AddUserScreen extends StatefulWidget {
 
 class _AddUserScreenState extends State<AddUserScreen> {
   final _usernameController = TextEditingController();
-  CameraController? _controller;
-  Future<void>? _initializeControllerFuture;
+  File? _imageFile;
   bool _isSaving = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _initCamera();
-  }
-
-  Future<void> _initCamera() async {
-    final cameras = await availableCameras();
-    final firstCamera = cameras.first;
-    _controller = CameraController(firstCamera, ResolutionPreset.medium);
-    _initializeControllerFuture = _controller!.initialize();
-    if (mounted) setState(() {});
-  }
+  final ImagePicker _picker = ImagePicker();
 
   @override
   void dispose() {
-    _controller?.dispose();
     _usernameController.dispose();
     super.dispose();
   }
 
+  Future<void> _takePicture() async {
+    try {
+      final XFile? photo = await _picker.pickImage(
+        source: ImageSource.camera,
+        preferredCameraDevice: CameraDevice.front,
+      );
+
+      if (photo != null) {
+        setState(() {
+          _imageFile = File(photo.path);
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        NotificationHelper.show(
+          context,
+          isSuccess: false,
+          message: 'Error taking picture: $e',
+        );
+      }
+    }
+  }
+
   Future<void> _saveUser() async {
-    if (_usernameController.text.isEmpty || _controller == null) return;
+    if (_usernameController.text.isEmpty || _imageFile == null) {
+      NotificationHelper.show(
+        context,
+        isSuccess: false,
+        message: 'Please enter username and take a picture',
+      );
+      return;
+    }
 
     setState(() => _isSaving = true);
     try {
-      await _initializeControllerFuture;
-      final path = join(
-        (await getTemporaryDirectory()).path,
-        '${DateTime.now()}.png',
-      );
-      final image = await _controller!.takePicture();
-      await image.saveTo(path);
-
       final token = Provider.of<AdminProvider>(context, listen: false).token;
       if (token != null) {
         final message = await ApiService().addUser(
           _usernameController.text,
-          image.path,
+          _imageFile!.path,
           token,
         );
         if (mounted) {
@@ -157,43 +186,70 @@ class _AddUserScreenState extends State<AddUserScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Add User')),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: TextField(
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            TextField(
               controller: _usernameController,
               decoration: const InputDecoration(
                 labelText: 'Username',
                 border: OutlineInputBorder(),
               ),
             ),
-          ),
-          Expanded(
-            child: FutureBuilder<void>(
-              future: _initializeControllerFuture,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.done) {
-                  return CameraPreview(_controller!);
-                } else {
-                  return const Center(child: CircularProgressIndicator());
-                }
-              },
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _isSaving ? null : _saveUser,
-                child: _isSaving
-                    ? const CircularProgressIndicator()
-                    : const Text('Capture & Save'),
+            const SizedBox(height: 20),
+            if (_imageFile != null)
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.file(
+                  _imageFile!,
+                  height: 300,
+                  width: 300,
+                  fit: BoxFit.cover,
+                ),
+              )
+            else
+              Container(
+                height: 300,
+                width: 300,
+                decoration: BoxDecoration(
+                  color: Colors.grey[200],
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: const [
+                    Icon(Icons.camera_alt, size: 50, color: Colors.grey),
+                    SizedBox(height: 10),
+                    Text('No Image Captured'),
+                  ],
+                ),
               ),
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                ElevatedButton.icon(
+                  onPressed: _takePicture,
+                  icon: const Icon(Icons.camera),
+                  label: Text(_imageFile == null ? 'Take Picture' : 'Retake'),
+                ),
+                ElevatedButton.icon(
+                  onPressed: _isSaving ? null : _saveUser,
+                  icon: const Icon(Icons.save),
+                  label: _isSaving
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Save User'),
+                ),
+              ],
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

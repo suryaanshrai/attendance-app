@@ -288,112 +288,125 @@ class _ViewLogsScreenState extends State<ViewLogsScreen> {
 
             if (_isLoading)
               const Expanded(child: Center(child: CircularProgressIndicator()))
-            else if (_logs != null) ...[
-              // Analytics Header
-              Card(
-                color: Colors.blue.shade50,
-                child: Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+            else if (_logs != null)
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Column(
                     children: [
-                      _StatItem('Avg', _avgArrival),
-                      _StatItem('Med', _medianArrival),
-                      _StatItem('Earliest', _earliestArrival),
-                      _StatItem('Latest', _latestArrival),
+                      // Analytics Header
+                      Card(
+                        color: Colors.blue.shade50,
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceAround,
+                            children: [
+                              _StatItem('Avg', _avgArrival),
+                              _StatItem('Med', _medianArrival),
+                              _StatItem('Earliest', _earliestArrival),
+                              _StatItem('Latest', _latestArrival),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+
+                      // Summary
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          _StatusChip(
+                            'On Time $_onTimeCount',
+                            Colors.green,
+                            '😊',
+                          ),
+                          _StatusChip('Late $_lateCount', Colors.orange, '😐'),
+                          _StatusChip('Absent $_absentCount', Colors.red, '😞'),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+
+                      // Calendar
+                      TableCalendar(
+                        firstDay: DateTime(_year, _month, 1),
+                        lastDay: DateTime(_year, _month + 1, 0),
+                        focusedDay: DateTime(_year, _month, 1),
+                        headerVisible: false,
+                        calendarFormat: CalendarFormat.month,
+                        availableGestures: AvailableGestures.none,
+                        calendarBuilders: CalendarBuilders(
+                          defaultBuilder: (context, day, focusedDay) {
+                            return _buildCalendarCell(day);
+                          },
+                          todayBuilder: (context, day, focusedDay) {
+                            return _buildCalendarCell(
+                              day,
+                            ); // Treat today same as others for coloring
+                          },
+                          outsideBuilder: (context, day, focusedDay) =>
+                              const SizedBox.shrink(),
+                        ),
+                      ),
+                      const Divider(),
+
+                      // Log List
+                      ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: _logs!.logs.length,
+                        itemBuilder: (context, index) {
+                          // We want to group logs by day in the list?
+                          // Or just list them chronologically as requested "Below the calendar, all logs should be there"
+                          // "text colour should be as per the category"
+                          final logStr = _logs!.logs[index];
+                          final dt = DateTime.parse(logStr);
+                          final day = DateTime(dt.year, dt.month, dt.day);
+
+                          Color color = Colors.black;
+                          String prefix = '';
+
+                          if (_logsByDay.containsKey(day)) {
+                            final dayLogs = _logsByDay[day]!;
+                            final firstLog = dayLogs.first;
+                            final threshold = DateTime(
+                              day.year,
+                              day.month,
+                              day.day,
+                              _thresholdTime.hour,
+                              _thresholdTime.minute,
+                            );
+
+                            if (dt == firstLog) {
+                              if (firstLog.isBefore(threshold)) {
+                                color = Colors.green;
+                                prefix = '😊 (Entry) ';
+                              } else {
+                                color = Colors.orange;
+                                prefix = '😐 (Late) ';
+                              }
+                            } else if (dayLogs.length > 1 &&
+                                dt == dayLogs.last) {
+                              color = Colors.blue;
+                              prefix = '👋 (Exit) ';
+                            }
+                          }
+
+                          return ListTile(
+                            title: Text(
+                              '$prefix$logStr',
+                              style: TextStyle(
+                                color: color,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
                     ],
                   ),
                 ),
-              ),
-              const SizedBox(height: 10),
-
-              // Summary
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _StatusChip('On Time $_onTimeCount', Colors.green, '😊'),
-                  _StatusChip('Late $_lateCount', Colors.orange, '😐'),
-                  _StatusChip('Absent $_absentCount', Colors.red, '😞'),
-                ],
-              ),
-              const SizedBox(height: 10),
-
-              // Calendar
-              TableCalendar(
-                firstDay: DateTime(_year, _month, 1),
-                lastDay: DateTime(_year, _month + 1, 0),
-                focusedDay: DateTime(_year, _month, 1),
-                headerVisible: false,
-                calendarFormat: CalendarFormat.month,
-                availableGestures: AvailableGestures.none,
-                calendarBuilders: CalendarBuilders(
-                  defaultBuilder: (context, day, focusedDay) {
-                    return _buildCalendarCell(day);
-                  },
-                  todayBuilder: (context, day, focusedDay) {
-                    return _buildCalendarCell(
-                      day,
-                    ); // Treat today same as others for coloring
-                  },
-                  outsideBuilder: (context, day, focusedDay) =>
-                      const SizedBox.shrink(),
-                ),
-              ),
-              const Divider(),
-
-              // Log List
-              Expanded(
-                child: ListView.builder(
-                  itemCount: _logs!.logs.length,
-                  itemBuilder: (context, index) {
-                    // We want to group logs by day in the list?
-                    // Or just list them chronologically as requested "Below the calendar, all logs should be there"
-                    // "text colour should be as per the category"
-                    final logStr = _logs!.logs[index];
-                    final dt = DateTime.parse(logStr);
-                    final day = DateTime(dt.year, dt.month, dt.day);
-
-                    Color color = Colors.black;
-                    String prefix = '';
-
-                    if (_logsByDay.containsKey(day)) {
-                      final dayLogs = _logsByDay[day]!;
-                      final firstLog = dayLogs.first;
-                      final threshold = DateTime(
-                        day.year,
-                        day.month,
-                        day.day,
-                        _thresholdTime.hour,
-                        _thresholdTime.minute,
-                      );
-
-                      if (dt == firstLog) {
-                        if (firstLog.isBefore(threshold)) {
-                          color = Colors.green;
-                          prefix = '😊 (Entry) ';
-                        } else {
-                          color = Colors.orange;
-                          prefix = '😐 (Late) ';
-                        }
-                      } else if (dayLogs.length > 1 && dt == dayLogs.last) {
-                        color = Colors.blue;
-                        prefix = '👋 (Exit) ';
-                      }
-                    }
-
-                    return ListTile(
-                      title: Text(
-                        '$prefix$logStr',
-                        style: TextStyle(
-                          color: color,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ] else
+              )
+            else
               const Expanded(
                 child: Center(child: Text('Select User and Fetch Logs')),
               ),
@@ -407,8 +420,12 @@ class _ViewLogsScreenState extends State<ViewLogsScreen> {
     Color? bgColor;
     Color textColor = Colors.black;
 
-    if (_logsByDay.containsKey(day) && _logsByDay[day]!.isNotEmpty) {
-      final firstLog = _logsByDay[day]!.first;
+    // Normalize day to match map keys (Local Midnight)
+    final normalizedDay = DateTime(day.year, day.month, day.day);
+
+    if (_logsByDay.containsKey(normalizedDay) &&
+        _logsByDay[normalizedDay]!.isNotEmpty) {
+      final firstLog = _logsByDay[normalizedDay]!.first;
       final threshold = DateTime(
         day.year,
         day.month,
@@ -417,14 +434,17 @@ class _ViewLogsScreenState extends State<ViewLogsScreen> {
         _thresholdTime.minute,
       );
       if (firstLog.isBefore(threshold)) {
-        bgColor = Colors.green.shade200;
+        bgColor = Colors.green;
+        textColor = Colors.white;
       } else {
-        bgColor = Colors.orange.shade200;
+        bgColor = Colors.yellow;
+        textColor = Colors.black;
       }
     } else {
       // Absent
-      if (day.isBefore(DateTime.now())) {
-        bgColor = Colors.red.shade200;
+      if (normalizedDay.isBefore(DateTime.now())) {
+        bgColor = Colors.red;
+        textColor = Colors.white;
       }
     }
 
